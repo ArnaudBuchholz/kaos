@@ -4,22 +4,9 @@ const assert = require('assert')
 const createKey = require('../../createKey')
 const { createReadStream } = require('fs')
 const { join } = require('path')
+const similarity = require('./similarity')
 
 const helloWorld = 'Hello World !'
-
-function similarity (hash1, hash2) {
-  const hexHash1 = hash1.toString('hex')
-  const hexHash2 = hash2.toString('hex')
-  const length = hexHash1.length
-  // assuming both hash have the same length
-  const match = hexHash1.split('').reduce((count, value, index) => {
-    if (value === hexHash2[index]) {
-      return count + 1
-    }
-    return count
-  }, 0)
-  return Math.floor(100 * match / length) // %
-}
 
 describe('createKey', () => {
   it('allocates a structure containing the content and its hash', async () => {
