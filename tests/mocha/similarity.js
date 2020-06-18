@@ -13,5 +13,3 @@ module.exports = function (buffer1, buffer2) {
   }, 0)
   return Math.floor(100 * match / length) // %
 }
-
-  
