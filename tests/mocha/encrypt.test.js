@@ -15,21 +15,22 @@ describe('encrypt', () => {
   before(async () => {
     key = await createKey(secretKey)
     message = Buffer.from('Hello World !', 'utf8')
-    encrypted = Buffer.from(message)
-    encrypt(key, encrypted)
+    encrypted = encrypt(key, message)
   })
 
   it('encrypts the message', async () => {
-    assert.strictEqual(message.length, encrypted.length)
     assert.ok(similarity(message, encrypted) < 20)
   })
 
   it('supports partial encryption', async () => {
-    const concatenated = Buffer.alloc(message.length)
+    const session = encrypt.open(key, message.length)
+    const concatenated = Buffer.allocUnsafe(session.header.length + message.length)
+    session.header.copy(concatenated)
+    message.copy(concatenated, session.header.length)
     for (let index = 0; index < message.length; ++index) {
       const partial = Buffer.alloc(1, message[index])
-      encrypt(key, partial, index)
-      concatenated[index] = partial[0]
+      encrypt.process(session, partial, index)
+      concatenated[session.header.length + index] = partial[0]
     }
     assert.strictEqual(similarity(encrypted, concatenated), 100)
   })
