@@ -14,13 +14,13 @@ describe('encrypt', () => {
 
   before(async () => {
     key = await createKey(secretKey)
-    message = Buffer.allocUnsafe(1024*1024*10)
+    message = Buffer.allocUnsafe(1024 * 1024 * 10)
   })
 
   for (var count = 0; count < 10; ++count) {
     it('encrypts the message', async () => {
-        const encrypted = Buffer.from(message)
-        encrypt(key, encrypted)
-      })
+      const encrypted = Buffer.from(message)
+      encrypt(key, encrypted)
+    })
   }
 })

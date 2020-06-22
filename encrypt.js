@@ -1,31 +1,67 @@
 'use strict'
 
 const crypto = require('crypto')
+const { Duplex } = require('stream')
 
 const mask = require('./mask')
+const toBuffer = require('./toBuffer')
 
 function encrypt (key, buffer) {
-  const session = open(key, buffer.length)
-  const encrypted = Buffer.allocUnsafe(session.header.length + message.length)
-  session.header.copy(concatenated)
-  message.copy(concatenated, session.header.length)
-  process(session, { concatenated, offset: 0, length: buffer.length }, 0)
+  const stream = encrypt.createStream(key)
+  const promise = toBuffer(stream)
+  stream.write(buffer)
+  return promise
 }
 
-encrypt.open = function (key, length) {
-  const header = crypto.randomBytes(32)
-  const session = {
-    key,
-    header,
-    length
+class EncryptionStream extends Duplex {
+  _read () {
+    this._readStarted = true
+    this._flush()
+  }
+
+  _flushIfStarted () {
+    if (this._readStarted) {
+      this._flush()
+    }
+  }
+
+  _flush () {
+    while (this._chunks.length) {
+      this.push(this._chunks.shift())
+    }
+  }
+
+  _write (chunk, encoding, onwrite) {
+    const encrypted = Buffer.from(chunk)
+    for (let index = 0; index < chunk.length; ++index) {
+      const byteMask = mask(this._key, this._salt, this._offset)
+      encrypted[index] = encrypted[index] ^ byteMask
+    }
+    this._chunks.push(encrypted)
+    this._flushIfStarted()
+    onwrite()
+  }
+
+  end () {
+    this._chunks.push(null)
+    this._flushIfStarted()
+    return super.end.apply(this, arguments)
+  }
+
+  constructor (options) {
+    super(options)
+    this._offset = 0
+    this._chunks = []
   }
 }
 
-encrypt.process = function (session, { buffer, offset, length }, absoluteOffset = 0) {
-  for (let index = 0; index < length; ++index) {
-    const byteMask = mask(session, absoluteOffset + index)
-    buffer[offset + index] = buffer[offset + index] ^ byteMask
-  }
+encrypt.createStream = function (key) {
+  const salt = crypto.randomBytes(32)
+  const stream = new EncryptionStream()
+  stream._key = key
+  stream._salt = salt
+  stream._chunks.push(salt)
+  return stream
 }
 
 module.exports = encrypt
