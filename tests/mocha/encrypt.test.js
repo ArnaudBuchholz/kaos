@@ -32,7 +32,7 @@ describe('encrypt', () => {
     let index = 0
     function next () {
       if (index < message.length) {
-        stream.write(message[index], next)
+        stream.write(new Buffer.alloc(1, message[index]), next)
         ++index
       } else {
         stream.end()

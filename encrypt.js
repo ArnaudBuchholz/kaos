@@ -10,24 +10,16 @@ function encrypt (key, buffer) {
   const stream = encrypt.createStream(key)
   const promise = toBuffer(stream)
   stream.write(buffer)
+  stream.end()
   return promise
 }
 
 class EncryptionStream extends Duplex {
   _read () {
-    this._readStarted = true
-    this._flush()
-  }
-
-  _flushIfStarted () {
-    if (this._readStarted) {
-      this._flush()
-    }
-  }
-
-  _flush () {
     while (this._chunks.length) {
-      this.push(this._chunks.shift())
+      if (!this.push(this._chunks.shift())) {
+        break
+      }
     }
   }
 
@@ -38,13 +30,11 @@ class EncryptionStream extends Duplex {
       encrypted[index] = encrypted[index] ^ byteMask
     }
     this._chunks.push(encrypted)
-    this._flushIfStarted()
     onwrite()
   }
 
   end () {
     this._chunks.push(null)
-    this._flushIfStarted()
     return super.end.apply(this, arguments)
   }
 
