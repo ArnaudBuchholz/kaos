@@ -26,7 +26,8 @@ describe('encrypt', () => {
   it('supports streaming', done => {
     const stream = encrypt.createStream(key)
     toBuffer(stream).then(streamed => {
-      assert.strictEqual(similarity(encrypted, streamed), 100)
+      assert.strictEqual(encrypted.length, streamed.length)
+      assert.ok(similarity(encrypted, streamed) < 20)
       done()
     })
     let index = 0
@@ -39,5 +40,21 @@ describe('encrypt', () => {
       }
     }
     next()
+  })
+
+  describe('performance', () => {
+
+    let bigMessage
+
+    before(async () => {
+      bigMessage = Buffer.allocUnsafe(1024 * 1024 * 10)
+    })
+
+    for (var count = 0; count < 10; ++count) {
+      it(`is performant (round ${count + 1})`, async () => {
+        const encrypted = await encrypt(key, bigMessage)
+        assert.ok(similarity(encrypted, bigMessage) < 20)
+      })
+    }
   })
 })
