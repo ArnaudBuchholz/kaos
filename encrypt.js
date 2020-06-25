@@ -1,13 +1,12 @@
 'use strict'
 
-const crypto = require('crypto')
 const { Duplex } = require('stream')
-
+const createKey = require('./createKey')
 const mask = require('./mask')
 const toBuffer = require('./toBuffer')
 
-function encrypt (key, buffer) {
-  const stream = encrypt.createStream(key)
+async function encrypt (key, buffer) {
+  const stream = await encrypt.createStream(key)
   const promise = toBuffer(stream)
   stream.write(buffer)
   stream.end()
@@ -35,7 +34,7 @@ class EncryptionStream extends Duplex {
   _write (chunk, encoding, onwrite) {
     const encrypted = Buffer.from(chunk)
     for (let index = 0; index < chunk.length; ++index) {
-      const byteMask = mask(this._key, this._salt, this._offset++)
+      const byteMask = mask(this._key, this._offset++)
       encrypted[index] = encrypted[index] ^ byteMask
     }
     this._chunks.push(encrypted)
@@ -56,12 +55,10 @@ class EncryptionStream extends Duplex {
   }
 }
 
-encrypt.createStream = function (key) {
-  const salt = crypto.randomBytes(32)
+encrypt.createStream = async function (key) {
   const stream = new EncryptionStream()
-  stream._key = key
-  stream._salt = salt
-  stream._chunks.push(salt)
+  stream._key = await createKey(key)
+  stream._chunks.push(stream._key.salt)
   return stream
 }
 

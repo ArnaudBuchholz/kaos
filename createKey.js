@@ -2,31 +2,35 @@
 
 const crypto = require('crypto')
 const { Readable } = require('stream')
+const toBuffer = require('./toBuffer')
 
-function streamToString (stream) {
-  const chunks = []
-  return new Promise((resolve, reject) => {
-    stream.on('data', chunk => chunks.push(chunk))
-    stream.on('error', reject)
-    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
-  })
-}
-
-function process (content) {
-  const hash = crypto.createHash('sha256')
-  hash.update(content)
+function allocate (key, salt) {
+  const hash = crypto.createHash('sha512')
+  // hash is 64 bytes long, pad content to minimize the repetition
+  const lengthMod64 = key.length % 64
+  let paddingLength
+  if (lengthMod64 === 0) {
+    paddingLenth = 63
+  } else {
+    paddingLength = 65 - lengthMod64
+  }
+  const saltedKey = Buffer.allocUnsafe(key.length + paddingLength)
+  key.copy(saltedKey)
+  salt.copy(saltedKey, key.length, 0, paddingLength)
+  hash.update(saltedKey)
   return {
-    content,
-    hash: hash.digest()
+    saltedKey,
+    hash: hash.digest(),
+    salt
   }
 }
 
-module.exports = async function createKey (parameter) {
-  if (typeof parameter === 'string') {
-    return process(parameter)
+module.exports = async function createKey (key, salt = crypto.randomBytes(64)) {
+  if (typeof key === 'string') {
+    return allocate(Buffer.from(key), salt)
   }
-  if (parameter instanceof Readable) {
-    return process(await streamToString(parameter))
+  if (key instanceof Readable) {
+    return allocate(await toBuffer(key), salt)
   }
   throw new Error('Unsupported parameter')
 }
