@@ -7,7 +7,7 @@ function show (string, skipSeparator = false) {
   if (!Array.isArray(string)) {
     string = string.split('')
   }
-  console.log('|' + string.map(char => { const code = char.charCodeAt(0); return code < 32 ? '\\x' + code.toString(16) : char }).join('|') + '|')
+  console.log('|' + string.map(char => { const code = char.charCodeAt(0); return code < 32 ? '\\x' + code.toString(16) : char }).join('|') + '|')
   if (!skipSeparator) {
     console.log('|' + string.map(() => '-').join('|') + '|')
   }
