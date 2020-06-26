@@ -1,36 +1,15 @@
 'use strict'
 
-const { Duplex } = require('stream')
+const CryptoStream = require('./CryptoStream')
 const createKey = require('./createKey')
 const mask = require('./mask')
 const toBuffer = require('./toBuffer')
 
 async function encrypt (key, buffer) {
-  const stream = await encrypt.createStream(key)
-  const promise = toBuffer(stream)
-  stream.write(buffer)
-  stream.end()
-  return promise
+  return toBuffer(await encrypt.createStream(key), buffer)
 }
 
-class EncryptionStream extends Duplex {
-  _read () {
-    let count
-    while (this._chunks.length) {
-      ++count
-      if (!this.push(this._chunks.shift())) {
-        break
-      }
-    }
-    this._pending = !count
-  }
-
-  _readIfPending () {
-    if (this._pending) {
-      this._read()
-    }
-  }
-
+class EncryptionStream extends CryptoStream {
   _write (chunk, encoding, onwrite) {
     const encrypted = Buffer.from(chunk)
     for (let index = 0; index < chunk.length; ++index) {
@@ -41,24 +20,12 @@ class EncryptionStream extends Duplex {
     this._readIfPending()
     onwrite()
   }
-
-  end () {
-    this._chunks.push(null)
-    this._readIfPending()
-    return super.end.apply(this, arguments)
-  }
-
-  constructor (options) {
-    super(options)
-    this._offset = 0
-    this._chunks = []
-  }
 }
 
 encrypt.createStream = async function (key) {
   const stream = new EncryptionStream()
   stream._key = await createKey(key)
-  stream._chunks.push(stream._key.salt)
+  stream._chunks.push(stream._key.salt.subarray(0, stream._key.offset))
   return stream
 }
 
