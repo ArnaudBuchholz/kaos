@@ -10,11 +10,12 @@ const similarity = require('./similarity')
 const helloWorld = 'Hello World !'
 
 describe('createKey', () => {
-  it('allocates a structure containing the salted key, the hash and the salt', async () => {
-    const { saltedKey, hash, salt } = await createKey(helloWorld)
+  it('allocates a structure containing the salted key, the hash, the salt and the offset', async () => {
+    const { saltedKey, hash, salt, offset } = await createKey(helloWorld)
     assert.ok(!!saltedKey)
     assert.ok(!!hash)
     assert.ok(!!salt)
+    assert.strictEqual(typeof offset, 'number')
   })
 
   it('allocates different hash for the same content', async () => {
