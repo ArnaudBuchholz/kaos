@@ -29,7 +29,7 @@ describe('encrypt', () => {
     let index = 0
     function next () {
       if (index < message.length) {
-        stream.write(new Buffer.alloc(1, message[index]), next)
+        stream.write(Buffer.alloc(1, message[index]), next)
         ++index
       } else {
         stream.end()
@@ -40,7 +40,6 @@ describe('encrypt', () => {
   })
 
   describe('performance', () => {
-
     let bigMessage
 
     before(async () => {
