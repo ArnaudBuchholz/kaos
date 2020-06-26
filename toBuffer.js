@@ -1,10 +1,15 @@
 'use strict'
 
-module.exports = readable => {
-  return new Promise((resolve, reject)  => {
+module.exports = (stream, dataToWrite) => {
+  const promise = new Promise((resolve, reject) => {
     const buffer = []
-    readable.on('data', chunk => buffer.push(chunk))
-    readable.on('end', () => resolve(Buffer.concat(buffer)))
-    readable.on('error', reject)
+    stream.on('data', chunk => buffer.push(chunk))
+    stream.on('end', () => resolve(Buffer.concat(buffer)))
+    stream.on('error', reject)
   })
+  if (dataToWrite) {
+    stream.write(dataToWrite)
+    stream.end()
+  }
+  return promise
 }
