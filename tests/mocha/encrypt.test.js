@@ -48,7 +48,12 @@ describe('encrypt', () => {
 
     for (var count = 0; count < 10; ++count) {
       it(`is performant (round ${count + 1})`, async () => {
+        const start = process.hrtime()
         const encrypted = await encrypt(secretKey, bigMessage)
+        const duration = process.hrtime(start)
+        const ms = duration[1] / 1000000
+        const speed = Math.floor(bigMessage.length / (1024 * ms))
+        console.info('        Execution time %dms, speed %d Kb/ms', Math.floor(ms), speed)
         assert.ok(similarity(encrypted, bigMessage) < 20)
       })
     }
