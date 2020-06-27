@@ -20,6 +20,11 @@ class EncryptionStream extends CryptoStream {
     this._readIfPending()
     onwrite()
   }
+
+  end () {
+    this._flush()
+    return super.end.apply(this, arguments)
+  }
 }
 
 encrypt.createStream = async function (key) {
