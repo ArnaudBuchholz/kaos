@@ -20,10 +20,9 @@ module.exports = class CryptoStream extends Duplex {
     }
   }
 
-  end () {
+  _flush () {
     this._chunks.push(null)
     this._readIfPending()
-    return super.end.apply(this, arguments)
   }
 
   constructor (options) {
