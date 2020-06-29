@@ -52,6 +52,8 @@ class DecryptionStream extends CryptoStream {
             }
             this._writeEnd(onwrite)
           })
+      } else {
+        onwrite()
       }
       return
     }
