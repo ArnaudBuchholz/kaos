@@ -30,6 +30,9 @@ module.exports = async function createKey (key, salt = crypto.randomBytes(64)) {
   if (typeof key === 'string') {
     return allocate(Buffer.from(key), salt)
   }
+  if (key instanceof Buffer) {
+    return allocate(key, salt)
+  }
   if (key instanceof Readable) {
     return allocate(await toBuffer(key), salt)
   }
