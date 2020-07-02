@@ -54,9 +54,13 @@ describe('createKey', () => {
   describe('consecutive blocks of 64 bytes do not repeat themselves (< 20%)', () => {
     const length = 64 * 63
 
-    for (let size = 1; size < 128; ++size) {
+    for (let size = 1; size <= 128; ++size) {
       it(size.toString(), async () => {
         const key = await createKey(crypto.randomBytes(size))
+        assert.notStrictEqual(key.saltedKey.length % 64, 0)
+        assert.strictEqual(key.saltedKey.length % 2, 1)
+        assert.ok(key.offset >= 32)
+        assert.ok(key.offset <= 64)
         const buffer = Buffer.allocUnsafe(length)
         for (let index = 0; index < length; ++index) {
           buffer[index] = mask(key, index)
