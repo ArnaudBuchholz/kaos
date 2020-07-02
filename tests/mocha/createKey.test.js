@@ -3,6 +3,7 @@
 const crypto = require('crypto')
 const assert = require('assert')
 const createKey = require('../../createKey')
+const mask = require('../../mask')
 const { createReadStream } = require('fs')
 const { join } = require('path')
 const similarity = require('./similarity')
@@ -48,5 +49,30 @@ describe('createKey', () => {
     assert.ok(similarity(hash1, hash2) < 20)
     assert.ok(similarity(hash1, hash3) < 20)
     assert.ok(similarity(hash1, hash4) < 20)
+  })
+
+  describe('consecutive blocks of 64 bytes do not repeat themselves (< 20%)', () => {
+    const length = 64 * 63
+
+    for (let size = 1; size < 128; ++size) {
+      it(size.toString(), async () => {
+        const key = await createKey(crypto.randomBytes(size))
+        const buffer = Buffer.allocUnsafe(length)
+        for (let index = 0; index < length; ++index) {
+          buffer[index] = mask(key, index)
+        }
+        for (let index = 0; index < 62; ++index) {
+          let offset = index * 64
+          const block = buffer.slice(offset, offset + 64)
+          assert.strictEqual(block.length, 64)
+          while (offset < length - 64) {
+            offset += 64
+            const next = buffer.slice(offset, offset + 64)
+            assert.strictEqual(next.length, 64)
+            assert.ok(similarity(block, next) < 20)
+          }
+        }
+      })
+    }
   })
 })
