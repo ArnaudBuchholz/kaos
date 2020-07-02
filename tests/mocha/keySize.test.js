@@ -19,24 +19,13 @@ describe('testing different key sizes', () => {
     })
   })
 
-  for (let size = 1; size < 128; ++size) {
-    describe(size.toString(), () => {
-      let key
-      let encrypted
-
-      before(() => {
-        key = crypto.randomBytes(size)
-      })
-
-      it('encrypts', async () => {
-        encrypted = await encrypt(key, message)
-        assert.ok(similarity(encrypted, message) < 20)
-      })
-
-      it('decrypts', async () => {
-        const decrypted = await decrypt(key, encrypted)
-        assert.strictEqual(decrypted.toString('utf8'), message)
-      })
+  for (let size = 1; size < 512; ++size) {
+    it(size.toString(), async () => {
+      const key = crypto.randomBytes(size)
+      const encrypted = await encrypt(key, message)
+      assert.ok(similarity(encrypted, message) < 2)
+      const decrypted = await decrypt(key, encrypted)
+      assert.strictEqual(decrypted.toString('utf8'), message)
     })
   }
 })
