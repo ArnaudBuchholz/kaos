@@ -9,10 +9,10 @@ function allocate (key, salt) {
   // hash is 64 bytes long, pad content to minimize the repetition
   const lengthMod64 = key.length % 64
   let offset
-  if (lengthMod64 === 0) {
-    offset = 63
+  if (lengthMod64 < 32) {
+    offset = 63 - lengthMod64 /* 63, 62, ..., 32 */
   } else {
-    offset = 65 - lengthMod64
+    offset = 1 + lengthMod64 /* 33, 34, ..., 63 */
   }
   const saltedKey = Buffer.allocUnsafe(key.length + offset)
   key.copy(saltedKey)
