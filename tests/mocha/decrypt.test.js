@@ -43,6 +43,18 @@ describe('decrypt', () => {
     return promise
   })
 
+  it('supports partial streaming', async () => {
+    const info = await decrypt.getPartialStreamInfo(secretKey, 6, 10)
+    const header = encrypted.slice(0, info.header)
+    const stream = await decrypt.createPartialStream(info, header)
+    const promise = toBuffer(stream).then(buffer => {
+      const decryptedMessage = buffer.toString('utf8')
+      assert.strictEqual(decryptedMessage, 'World')
+    })
+    stream.write(encrypted.slice(info.from, info.to), () => stream.end())
+    return promise
+  })
+
   describe('performance', () => {
     let bigMessage
     let bigEncrypted
