@@ -82,4 +82,23 @@ decrypt.createStream = async function (key) {
   return stream
 }
 
+decrypt.getPartialStreamInfo = async function (key, from, to) {
+  const fakeKey = await createKey(key)
+  const header = fakeKey.offset
+  from += header
+  to += header
+  return { key, header, from, to }
+}
+
+decrypt.createPartialStream = function (info, header) {
+  const stream = new DecryptionStream()
+  stream._rawKey = info.key
+  return new Promise(resolve => {
+    stream.write(header, undefined, () => {
+      stream._offset = info.from - info.header
+      resolve(stream)
+    })
+  })
+}
+
 module.exports = decrypt
