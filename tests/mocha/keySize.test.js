@@ -23,7 +23,7 @@ describe('testing different key sizes', () => {
     it(size.toString(), async () => {
       const key = crypto.randomBytes(size)
       const encrypted = await encrypt(key, message)
-      assert.ok(similarity(encrypted, message) < 2)
+      similarity(encrypted, message, 2)
       const decrypted = await decrypt(key, encrypted)
       assert.strictEqual(decrypted.toString('utf8'), message)
     })
