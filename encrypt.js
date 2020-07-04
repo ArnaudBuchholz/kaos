@@ -2,7 +2,6 @@
 
 const CryptoStream = require('./CryptoStream')
 const createKey = require('./createKey')
-const mask = require('./mask')
 const toBuffer = require('./toBuffer')
 
 async function encrypt (key, buffer) {
@@ -11,12 +10,7 @@ async function encrypt (key, buffer) {
 
 class EncryptionStream extends CryptoStream {
   _write (chunk, encoding, onwrite) {
-    const encrypted = Buffer.from(chunk)
-    for (let index = 0; index < chunk.length; ++index) {
-      const byteMask = mask(this._key, this._offset++)
-      encrypted[index] = encrypted[index] ^ byteMask
-    }
-    this._chunks.push(encrypted)
+    this._mask(chunk)
     this._readIfPending()
     onwrite()
   }
@@ -25,13 +19,16 @@ class EncryptionStream extends CryptoStream {
     this._flush()
     return super.end.apply(this, arguments)
   }
+
+  constructor (key) {
+    super()
+    this._key = key
+    this._chunks.push(key.salt.subarray(0, key.offset))
+  }
 }
 
 encrypt.createStream = async function (key) {
-  const stream = new EncryptionStream()
-  stream._key = await createKey(key)
-  stream._chunks.push(stream._key.salt.subarray(0, stream._key.offset))
-  return stream
+  return new EncryptionStream(await createKey(key))
 }
 
 module.exports = encrypt
