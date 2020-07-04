@@ -2,7 +2,6 @@
 
 const CryptoStream = require('./CryptoStream')
 const createKey = require('./createKey')
-const mask = require('./mask')
 const toBuffer = require('./toBuffer')
 
 async function decrypt (key, buffer) {
@@ -10,25 +9,6 @@ async function decrypt (key, buffer) {
 }
 
 class DecryptionStream extends CryptoStream {
-  _decrypt (chunk) {
-    const decrypted = Buffer.from(chunk)
-    for (let index = 0; index < chunk.length; ++index) {
-      const byteMask = mask(this._key, this._offset++)
-      decrypted[index] = decrypted[index] ^ byteMask
-    }
-    this._chunks.push(decrypted)
-  }
-
-  async _createKey (chunk) {
-    this._key = await createKey(this._rawKey, this._salt)
-    const length = this._saltLength - this._key.offset
-    if (length > 0) {
-      const unusedSalt = Buffer.allocUnsafe(length)
-      this._salt.copy(unusedSalt, 0, this._key.offset, this._key.offset + length)
-      this._decrypt(unusedSalt)
-    }
-  }
-
   _writeEnd (onwrite) {
     if (this._ended) {
       this._flush()
@@ -38,26 +18,27 @@ class DecryptionStream extends CryptoStream {
     onwrite()
   }
 
+  async _buildKey (chunk, onwrite) {
+    const lengthForSalt = Math.min(this._saltLength - this._saltOffset, chunk.length)
+    chunk.copy(this._salt, this._saltOffset, 0, lengthForSalt)
+    this._saltOffset += lengthForSalt
+    if (this._saltOffset === this._saltLength) {
+      this._key = await createKey(this._keyBuffer, this._salt)
+      if (lengthForSalt < chunk.length) {
+        const chunkTail = chunk.subarray(lengthForSalt)
+        this._mask(chunkTail)
+      }
+      this._writeEnd(onwrite)
+    } else {
+      onwrite()
+    }
+  }
+
   _write (chunk, encoding, onwrite) {
     if (!this._key) {
-      const remaining = Math.min(64 - this._saltLength, chunk.length)
-      chunk.copy(this._salt, this._saltLength, 0, remaining)
-      this._saltLength += remaining
-      if (this._saltLength === 64) {
-        this._createKey()
-          .then(() => {
-            if (remaining < chunk.length) {
-              const chunkTail = chunk.subarray(remaining)
-              this._decrypt(chunkTail)
-            }
-            this._writeEnd(onwrite)
-          })
-      } else {
-        onwrite()
-      }
-      return
+      return this._buildKey(chunk, onwrite)
     }
-    this._decrypt(chunk)
+    this._mask(chunk)
     this._writeEnd(onwrite)
   }
 
@@ -69,36 +50,34 @@ class DecryptionStream extends CryptoStream {
     return super.end.apply(this, arguments)
   }
 
-  constructor (options) {
-    super(options)
-    this._salt = Buffer.allocUnsafe(64)
-    this._saltLength = 0
+  constructor (keyBuffer = null, saltLength = 0) {
+    super()
+    this._keyBuffer = keyBuffer
+    this._saltLength = saltLength
+    this._saltOffset = 0
+    if (saltLength) {
+      this._salt = Buffer.allocUnsafe(saltLength)
+    }
   }
 }
 
 decrypt.createStream = async function (key) {
-  const stream = new DecryptionStream()
-  stream._rawKey = key
-  return stream
+  const { buffer, offset } = await createKey.getBufferAndOffset(key)
+  return new DecryptionStream(buffer, offset)
 }
 
 decrypt.getPartialStreamInfo = async function (key, from, to) {
-  const fakeKey = await createKey(key)
-  const header = fakeKey.offset
-  from += header
-  to += header
-  return { key, header, from, to }
+  const { buffer, offset } = await createKey.getBufferAndOffset(key)
+  from += offset
+  to += offset
+  return { key: buffer, offset, from, to }
 }
 
-decrypt.createPartialStream = function (info, header) {
+decrypt.createPartialStream = async function (info, salt) {
   const stream = new DecryptionStream()
-  stream._rawKey = info.key
-  return new Promise(resolve => {
-    stream.write(header, undefined, () => {
-      stream._offset = info.from - info.header
-      resolve(stream)
-    })
-  })
+  stream._key = await createKey(info.key, salt)
+  stream._offset = info.from - info.offset
+  return stream
 }
 
 module.exports = decrypt
