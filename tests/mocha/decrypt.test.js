@@ -45,8 +45,8 @@ describe('decrypt', () => {
 
   it('supports partial streaming', async () => {
     const info = await decrypt.getPartialStreamInfo(secretKey, 6, 10)
-    const header = encrypted.slice(0, info.header)
-    const stream = await decrypt.createPartialStream(info, header)
+    const salt = encrypted.slice(0, info.offset)
+    const stream = await decrypt.createPartialStream(info, salt)
     const promise = toBuffer(stream).then(buffer => {
       const decryptedMessage = buffer.toString('utf8')
       assert.strictEqual(decryptedMessage, 'World')
