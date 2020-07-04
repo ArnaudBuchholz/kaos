@@ -22,7 +22,7 @@ describe('createKey', () => {
   it('allocates different hash for the same content', async () => {
     const { hash: hash1 } = await createKey(helloWorld)
     const { hash: hash2 } = await createKey(helloWorld)
-    assert.ok(similarity(hash1, hash2) < 20)
+    similarity(hash1, hash2, 20)
   })
 
   it('allocates the same hash for the same content (with the same salt)', async () => {
@@ -46,9 +46,9 @@ describe('createKey', () => {
     const { hash: hash2 } = await createKey('hello World !', salt)
     const { hash: hash3 } = await createKey('Hell0 World !', salt)
     const { hash: hash4 } = await createKey('Hell0 World ! ', salt)
-    assert.ok(similarity(hash1, hash2) < 20)
-    assert.ok(similarity(hash1, hash3) < 20)
-    assert.ok(similarity(hash1, hash4) < 20)
+    similarity(hash1, hash2, 20)
+    similarity(hash1, hash3, 20)
+    similarity(hash1, hash4, 20)
   })
 
   describe('consecutive blocks of 64 bytes do not repeat themselves (< 20%)', () => {
@@ -73,7 +73,7 @@ describe('createKey', () => {
             offset += 64
             const next = buffer.slice(offset, offset + 64)
             assert.strictEqual(next.length, 64)
-            assert.ok(similarity(block, next) < 20)
+            similarity(block, next, 20)
           }
         }
       })
