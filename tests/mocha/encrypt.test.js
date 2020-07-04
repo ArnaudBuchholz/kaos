@@ -17,14 +17,14 @@ describe('encrypt', () => {
   })
 
   it('encrypts the message', async () => {
-    assert.ok(similarity(message, encrypted) < 10)
+    similarity(message, encrypted, 10)
   })
 
   it('supports streaming', async () => {
     const stream = await encrypt.createStream(secretKey)
     const promise = toBuffer(stream).then(streamed => {
       assert.strictEqual(encrypted.length, streamed.length)
-      assert.ok(similarity(encrypted, streamed) < 10)
+      similarity(encrypted, streamed, 10)
     })
     let index = 0
     function next () {
@@ -54,7 +54,7 @@ describe('encrypt', () => {
         const ms = duration[1] / 1000000
         const speed = Math.floor(bigMessage.length / (1024 * ms))
         console.info('        Execution time %dms, speed %d Kb/ms', Math.floor(ms), speed)
-        assert.ok(similarity(encrypted, bigMessage) < 10)
+        similarity(encrypted, bigMessage, 10)
       })
     }
   })
