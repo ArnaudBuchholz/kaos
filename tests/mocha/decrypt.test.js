@@ -56,7 +56,8 @@ describe('decrypt', () => {
     return promise
   })
 
-  describe('performance', () => {
+  describe('performance', function () {
+    this.timeout(5000)
     let bigMessage
     let bigEncrypted
 
@@ -65,16 +66,20 @@ describe('decrypt', () => {
       bigEncrypted = await encrypt(secretKey, bigMessage)
     })
 
-    for (var count = 0; count < 10; ++count) {
-      it(`is performant (round ${count + 1})`, async () => {
+    const loops = 10
+
+    it(`is performant (loops=${loops})`, async () => {
+      let cumulated = 0
+      for (var count = 0; count < loops; ++count) {
         const start = process.hrtime()
         const decrypted = await decrypt(secretKey, bigEncrypted)
         const duration = process.hrtime(start)
-        const ms = duration[1] / 1000000
-        const speed = Math.floor(bigMessage.length / (1024 * ms))
-        console.info('        Execution time %dms, speed %d Kb/ms', Math.floor(ms), speed)
+        cumulated += duration[1] / 1000000
         assert.strictEqual(similarity(decrypted, bigMessage), 100)
-      })
-    }
+      }
+      const ms = cumulated / loops
+      const speed = Math.floor(bigMessage.length / (1024 * ms))
+      console.info('        Execution time %dms, speed %d Kb/ms', Math.floor(ms), speed)
+    })
   })
 })
