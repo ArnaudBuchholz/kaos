@@ -51,32 +51,31 @@ describe('createKey', () => {
     similarity(hash1, hash4, 20)
   })
 
-  describe('consecutive blocks of 64 bytes do not repeat themselves (< 20%)', () => {
+  it('makes sure consecutive blocks of 64 bytes do not repeat themselves (< 20%)', async function () {
+    this.timeout(5000)
     const length = 64 * 63
 
     for (let size = 1; size <= 128; ++size) {
-      it(size.toString(), async () => {
-        const key = await createKey(crypto.randomBytes(size))
-        assert.notStrictEqual(key.saltedKey.length % 64, 0)
-        assert.strictEqual(key.saltedKey.length % 2, 1)
-        assert.ok(key.offset >= 32)
-        assert.ok(key.offset <= 64)
-        const buffer = Buffer.allocUnsafe(length)
-        for (let index = 0; index < length; ++index) {
-          buffer[index] = mask(key, index)
+      const key = await createKey(crypto.randomBytes(size))
+      assert.notStrictEqual(key.saltedKey.length % 64, 0)
+      assert.strictEqual(key.saltedKey.length % 2, 1)
+      assert.ok(key.offset >= 32)
+      assert.ok(key.offset <= 64)
+      const buffer = Buffer.allocUnsafe(length)
+      for (let index = 0; index < length; ++index) {
+        buffer[index] = mask(key, index)
+      }
+      for (let index = 0; index < 62; ++index) {
+        let offset = index * 64
+        const block = buffer.slice(offset, offset + 64)
+        assert.strictEqual(block.length, 64)
+        while (offset < length - 64) {
+          offset += 64
+          const next = buffer.slice(offset, offset + 64)
+          assert.strictEqual(next.length, 64)
+          similarity(block, next, 20)
         }
-        for (let index = 0; index < 62; ++index) {
-          let offset = index * 64
-          const block = buffer.slice(offset, offset + 64)
-          assert.strictEqual(block.length, 64)
-          while (offset < length - 64) {
-            offset += 64
-            const next = buffer.slice(offset, offset + 64)
-            assert.strictEqual(next.length, 64)
-            similarity(block, next, 20)
-          }
-        }
-      })
+      }
     }
   })
 })
