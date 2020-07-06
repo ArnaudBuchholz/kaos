@@ -4,8 +4,8 @@ const CryptoStream = require('./CryptoStream')
 const createKey = require('./createKey')
 const toBuffer = require('./toBuffer')
 
-async function encrypt (key, buffer) {
-  return toBuffer(await encrypt.createStream(key), buffer)
+async function encrypt (key, buffer, salt) {
+  return toBuffer(await encrypt.createStream(key, salt), buffer)
 }
 
 class EncryptionStream extends CryptoStream {
@@ -27,8 +27,8 @@ class EncryptionStream extends CryptoStream {
   }
 }
 
-encrypt.createStream = async function (key) {
-  return new EncryptionStream(await createKey(key))
+encrypt.createStream = async function (key, salt) {
+  return new EncryptionStream(await createKey(key, salt))
 }
 
 module.exports = encrypt
