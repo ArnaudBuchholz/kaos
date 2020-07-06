@@ -1,8 +1,6 @@
 'use strict'
 
-const crypto = require('crypto')
 const encrypt = require('../encrypt')
-const toBuffer = require('../toBuffer')
 const similarity = require('./mocha/similarity')
 
 const secretKey = 'my secret key'
