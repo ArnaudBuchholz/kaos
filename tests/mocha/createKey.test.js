@@ -6,7 +6,7 @@ const createKey = require('../../createKey')
 const mask = require('../../mask')
 const { createReadStream } = require('fs')
 const { join } = require('path')
-const similarity = require('./similarity')
+const similarity = require('../similarity')
 
 const helloWorld = 'Hello World !'
 
