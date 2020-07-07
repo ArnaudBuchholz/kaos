@@ -3,7 +3,7 @@
 const assert = require('assert')
 const encrypt = require('../../encrypt')
 const toBuffer = require('../../toBuffer')
-const similarity = require('./similarity')
+const similarity = require('../similarity')
 
 const secretKey = 'my secret key'
 
@@ -40,7 +40,7 @@ describe('encrypt', () => {
   })
 
   describe('performance', function () {
-    this.timeout(5000)
+    this.timeout(10000)
     let bigMessage
 
     before(async () => {
