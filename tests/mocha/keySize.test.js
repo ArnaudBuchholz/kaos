@@ -5,7 +5,7 @@ const crypto = require('crypto')
 const encrypt = require('../../encrypt')
 const decrypt = require('../../decrypt')
 const toBuffer = require('../../toBuffer')
-const similarity = require('./similarity')
+const similarity = require('../similarity')
 const fs = require('fs')
 const { join } = require('path')
 
