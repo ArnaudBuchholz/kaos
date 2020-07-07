@@ -4,7 +4,7 @@ const assert = require('assert')
 const encrypt = require('../../encrypt')
 const decrypt = require('../../decrypt')
 const toBuffer = require('../../toBuffer')
-const similarity = require('./similarity')
+const similarity = require('../similarity')
 
 const secretKey = 'my secret key'
 const messageToEncrypt = 'Hello World !'
@@ -21,7 +21,7 @@ describe('decrypt', () => {
   it('decrypts the message', async () => {
     const decrypted = await decrypt(secretKey, encrypted)
     assert.strictEqual(message.length, decrypted.length)
-    assert.strictEqual(similarity(message, decrypted), 100)
+    assert.strictEqual(similarity(message, decrypted).percent, 100)
   })
 
   it('supports streaming', async () => {
@@ -57,7 +57,7 @@ describe('decrypt', () => {
   })
 
   describe('performance', function () {
-    this.timeout(5000)
+    this.timeout(10000)
     let bigMessage
     let bigEncrypted
 
@@ -75,7 +75,7 @@ describe('decrypt', () => {
         const decrypted = await decrypt(secretKey, bigEncrypted)
         const duration = process.hrtime(start)
         cumulated += duration[1] / 1000000
-        assert.strictEqual(similarity(decrypted, bigMessage), 100)
+        assert.strictEqual(similarity(decrypted, bigMessage).percent, 100)
       }
       const ms = cumulated / loops
       const speed = Math.floor(bigMessage.length / (1024 * ms))
