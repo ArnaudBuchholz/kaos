@@ -23,7 +23,9 @@ class DecryptionStream extends CryptoStream {
     chunk.copy(this._salt, this._saltOffset, 0, lengthForSalt)
     this._saltOffset += lengthForSalt
     if (this._saltOffset === this._saltLength) {
-      this._key = await createKey(this._keyBuffer, this._salt)
+      const key = await createKey(this._keyBuffer, this._salt)
+      this._key = key
+      this._offset = key.salt.readUInt32BE(key.offset - 4)
       if (lengthForSalt < chunk.length) {
         const chunkTail = chunk.subarray(lengthForSalt)
         this._mask(chunkTail)
@@ -75,8 +77,9 @@ decrypt.getPartialStreamInfo = async function (key, from, to) {
 
 decrypt.createPartialStream = async function (info, salt) {
   const stream = new DecryptionStream()
-  stream._key = await createKey(info.key, salt)
-  stream._offset = info.from - info.offset
+  const key = await createKey(info.key, salt)
+  stream._key = key
+  stream._offset = info.from - info.offset + key.salt.readUInt32BE(key.offset - 4)
   return stream
 }
 
