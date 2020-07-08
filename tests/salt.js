@@ -27,11 +27,12 @@ async function main () {
     if (!label) {
       return
     }
-    const matching = comparable.toString('hex').split('').map((hex, index) => {
-      if (match[index]) {
-        return hex.red
+    const matching = match.map((matched, index) => {
+      const byte = comparable[index].toString(16).padStart(2, '0')
+      if (matched) {
+        return byte.red
       }
-      return hex.green
+      return byte.gray
     })
     let percent = match.percent.toString().padStart(2, 0) + '%'
     if (match.percent > 10) {
