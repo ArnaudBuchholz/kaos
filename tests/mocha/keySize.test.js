@@ -2,6 +2,7 @@
 
 const assert = require('assert')
 const crypto = require('crypto')
+const createKey = require('../../createKey')
 const encrypt = require('../../encrypt')
 const decrypt = require('../../decrypt')
 const toBuffer = require('../../toBuffer')
@@ -24,8 +25,9 @@ describe('testing different key sizes', () => {
     for (let size = 1; size < 512; ++size) {
       it(size.toString(), async () => {
         const key = crypto.randomBytes(size)
+        const { offset } = createKey.getBufferAndOffset(key)
         const encrypted = await encrypt(key, message)
-        similarity(encrypted, message, 2)
+        similarity(encrypted, message.slice(offset), 0)
         const decrypted = await decrypt(key, encrypted)
         assert.strictEqual(decrypted.toString('utf8'), message)
       })
