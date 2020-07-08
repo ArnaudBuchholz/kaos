@@ -24,6 +24,7 @@ class EncryptionStream extends CryptoStream {
     super()
     this._key = key
     this._chunks.push(key.salt.subarray(0, key.offset))
+    this._offset = key.salt.readUInt32BE(key.offset - 4)
   }
 }
 
