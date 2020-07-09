@@ -8,7 +8,7 @@ A simple but efficient *(and hopefully hard to break)* data encrypter.
 * Decryption may start from almost any byte
 * Two consecutive encoding with the same key generates different encrypted results
 
-## Rational
+## Base algorithm
 
 Let's consider the message `"Hello World !"`
 
@@ -18,7 +18,7 @@ If we associate each letter to its ASCII code we get a bit array :
 |-|-|-|-|-|-|-|-|-|-|-|-|-|
 |01001000|01100101|01101100|01101100|01101111|00100000|01010111|01101111|01110010|01101100|01100100|00100000|00100001|
 
-The same way, the key `"secret"` can be represented as the following bit array :
+The same way, the key `"secret"` can be represented with the following bit array :
 
 |s|e|c|r|e|t|
 |-|-|-|-|-|-|
@@ -38,13 +38,98 @@ This gives the encrypted message : `";\x0\xf\x1e\xaT$\xa\x11\x1e\x1TR"`
 
 If we apply the XOR operation again with the exact same key on the encrypted message, we get back the source message.
 
-This simple encoding is not strong enough :
-* Since the key is repeated to match the message length, the smaller the key, the weaker it is.
-* Furthermore, the closer we get to the key, the more the message will be readable.
+## Advanced algorithm
 
-In this implementation, several mechanisms are in place to make the password and the encryption stronger :
-* The password is concatenated with random bytes (salt)
-* The resulting password length is adjusted to make sure it is not a multiple of 64
-* Only the necessary salt bytes are saved in the encrypted message
-* A [sha512](https://en.wikipedia.org/wiki/SHA-2) hash is built with the final password (length is 64 bytes)
-* When encoding / decoding, given the offset of the current byte to process, the mask is built by getting the password byte (offset % passwordLength) and the corresponding hash byte (offset % 64) and doing XOR on the two bytes. Because the password length is not a multiple of 64, it generates a sequence of at least 63 * 64 unique bytes.
+This basic encoding is not strong enough :
+* Since the key is repeated to match the message length, the smaller the key, the weaker it is.
+* Additionnaly, when trying to break the key, the more bytes are found, the more characters of the message is readable.
+
+In the final implementation, several mechanisms are in place to make the key and the encryption stronger :
+* The key is _salted_, meaning concatenated with random bytes
+* The resulting key length is adjusted to make sure it is not a multiple of 64
+* The salt bytes are saved at the beginning of the encrypted message
+* A [sha512](https://en.wikipedia.org/wiki/SHA-2) hash is built with the salted key, the hash length is 64 bytes
+* When encoding / decoding, given the offset of the current byte to process, the mask to apply is built by getting the corresponding salted key byte (offset % saltedKeyLength) and the corresponding hash byte (offset % 64) and applying XOR on the two bytes. Because the password length is not a multiple of 64, it generates a virtual sequence of unique bytes that is longer than the salted key.
+* If the above mask building gives 0 *(which would means no alteration of the message byte)*, the mask is built using additional binary operations
+* The offset is shifted randomly *(based on the last 4 bytes of the salt)*
+
+As a result, not only the key content but also the key length is required to decrypt the message properly.
+
+## API
+
+### Encryption
+
+```javascript
+
+const stream = require('stream')
+const { promisify } = require('util')
+const pipeline = promisify(stream.pipeline)
+const { createReadStream, createWriteStream } = require('fs')
+
+const { key, encrypt } = require('kaos')
+const myKey = key('my secret key') // supported parameters are string, buffers and readable streams
+// Alternately, you may also pass the salt bytes
+// key('your secret key', saltBuffer)
+
+pipeline(
+  createReadStream('file to encrypt'),
+  encrypt(myKey), // Stream.Transform object
+  createWriteStream('encrypted file')
+)
+  .then(() => console.log('Encryption succeeded.'))
+  .catch(() => console.log('Encryption failed.'))
+```
+
+### Decryption
+
+```javascript
+
+const stream = require('stream')
+const { promisify } = require('util')
+const pipeline = promisify(stream.pipeline)
+const { createReadStream, createWriteStream } = require('fs')
+
+const { key, decrypt } = require('kaos')
+const myKey = key('my secret key') // supported parameters are string, buffers and readable streams
+// You must not specify salt bytes (they will be ignored)
+
+pipeline(
+  createReadStream('file to decrypt'),
+  decrypt(myKey),
+  createWriteStream('decrypted file')
+)
+  .then(() => console.log('Decryption succeeded.'))
+  .catch(() => console.log('Decryption failed.'))
+```
+
+### Decryption for a given byte range
+
+```javascript
+
+const stream = require('stream')
+const { promisify } = require('util')
+const pipeline = promisify(stream.pipeline)
+const { createReadStream, createWriteStream } = require('fs')
+
+const { key, decrypt } = require('kaos')
+const myKey = key('my secret key') // supported parameters are string, buffers and readable streams
+
+myKey.byteRange(1000, 1100)
+  .then(options => 
+    // options.salt contains offset / end to read salt
+    pipeline(
+      createReadStream('file to decrypt', options.salt),
+      myKey.writableSaltBuffer(options)
+    )
+  )
+  .then(options => 
+    // options.range contains offset / end to read byte range
+    pipeline(
+      createReadStream('file to decrypt', options.range),
+      decrypt(myKey),
+      createWriteStream('decrypted byte range')
+    )
+  )
+  .then(() => console.log('Decryption succeeded.'))
+  .catch(() => console.log('Decryption failed.'))
+```
