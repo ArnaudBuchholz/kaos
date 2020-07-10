@@ -59,21 +59,26 @@ As a result, not only the key content but also the key length is required to dec
 
 ### Encryption
 
+The `encrypt` API accepts one parameter and returns a [Stream.Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) instance.
+
+The only parameter is the key used to encrypt, it can be :
+* A string
+* A [Buffer](https://nodejs.org/api/buffer.html#buffer_class_buffer) instance
+* A [Stream.Readable](https://nodejs.org/api/stream.html#stream_class_stream_readable) instance
+
+If an unsupported type is used, an [Error](https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Objets_globaux/Error) with the message `Unsupported key type` is thrown.
+
 ```javascript
 
 const stream = require('stream')
 const { promisify } = require('util')
 const pipeline = promisify(stream.pipeline)
 const { createReadStream, createWriteStream } = require('fs')
-
-const { key, encrypt } = require('kaos')
-const myKey = key('my secret key') // supported parameters are string, buffers and readable streams
-// Alternately, you may also pass the salt bytes
-// key('your secret key', saltBuffer)
+const { encrypt } = require('kaos')
 
 pipeline(
   createReadStream('file to encrypt'),
-  encrypt(myKey), // Stream.Transform object
+  encrypt('my secret key'), // Stream.Transform object
   createWriteStream('encrypted file')
 )
   .then(() => console.log('Encryption succeeded.'))
@@ -82,20 +87,21 @@ pipeline(
 
 ### Decryption
 
+The `decrypt` API copies the `encrypt` signature.
+
+Note that the decryption algorithm **does not verify** if the data is correctly restored.
+
 ```javascript
 
 const stream = require('stream')
 const { promisify } = require('util')
 const pipeline = promisify(stream.pipeline)
 const { createReadStream, createWriteStream } = require('fs')
-
-const { key, decrypt } = require('kaos')
-const myKey = key('my secret key') // supported parameters are string, buffers and readable streams
-// You must not specify salt bytes (they will be ignored)
+const { decrypt } = require('kaos')
 
 pipeline(
   createReadStream('file to decrypt'),
-  decrypt(myKey),
+  decrypt('my secret key'),
   createWriteStream('decrypted file')
 )
   .then(() => console.log('Decryption succeeded.'))
@@ -103,6 +109,8 @@ pipeline(
 ```
 
 ### Decryption for a given byte range
+
+It is also possible to decrypt partially the data using the 
 
 ```javascript
 
