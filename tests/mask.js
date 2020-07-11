@@ -3,8 +3,7 @@
 require('colors')
 
 const crypto = require('crypto')
-const createKey = require('../createKey')
-const mask = require('../mask')
+const createKey = require('../key')
 
 const secretKey = 'my secret key'
 
@@ -15,11 +14,12 @@ async function main () {
   let max = 0
 
   async function report (label, salt) {
-    const key = await createKey(secretKey, salt)
-    const length = key.saltedKey.length * key.hash.length
+    const key = createKey(secretKey)
+    await key.salt(salt)
+    const length = key._saltedKeyLength * key._hash.length
     let zeros = 0 // Will not change the encrypted message
     for (let offset = 0; offset < length; ++offset) {
-      if (mask(key, offset) === 0) {
+      if (key.mask(offset) === 0) {
         ++zeros
       }
     }
@@ -30,7 +30,7 @@ async function main () {
       return
     }
     let formattedPercent = percent.toString().padStart(2, 0) + '%'
-    if (percent > 10) {
+    if (percent > 0) {
       formattedPercent = formattedPercent.red
     } else {
       formattedPercent = formattedPercent.green
