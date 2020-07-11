@@ -53,7 +53,7 @@ In the final implementation, several mechanisms are in place to make the key and
 * If the above mask building gives 0 *(which would means no alteration of the message byte)*, the mask is built using additional binary operations
 * The offset is shifted randomly *(based on the last 4 bytes of the salt)*
 
-As a result, not only the key content but also the key length is required to decrypt the message properly.
+As a result, not only the key content but also the key length is required to decrypt the message properly. Also, thanks to the salt and hash, even if some characters of the key are known, the message remains unreadable.
 
 ## API
 
@@ -110,7 +110,8 @@ pipeline(
 
 ### Decryption for a given byte range
 
-It is also possible to decrypt partially the data using the 
+It is also possible to decrypt partially the data using the `key` API that provides information about the ranges to load from the encrypted data.
+Once salted, the key information can be reused to decode other ranges of the same encrypted data.
 
 ```javascript
 
@@ -120,21 +121,16 @@ const pipeline = promisify(stream.pipeline)
 const { createReadStream, createWriteStream } = require('fs')
 
 const { key, decrypt } = require('kaos')
-const myKey = key('my secret key') // supported parameters are string, buffers and readable streams
+const myKey = key('my secret key')
 
-myKey.byteRange(1000, 1100)
-  .then(options => 
-    // options.salt contains offset / end to read salt
-    pipeline(
-      createReadStream('file to decrypt', options.salt),
-      myKey.writableSaltBuffer(options)
-    )
-  )
-  .then(options => 
-    // options.range contains offset / end to read byte range
-    pipeline(
-      createReadStream('file to decrypt', options.range),
-      decrypt(myKey),
+myKey.byteRange(1000, 1100)  
+  .then(async range => {
+    // myKey.saltRange contains offset / end to read salt
+    await myKey.salt(createReadStream('file to decrypt', myKey.saltRange)))
+    // range contains offset / end to read byte range
+    return pipeline(
+      createReadStream('file to decrypt', range),
+      decrypt(myKey, range),
       createWriteStream('decrypted byte range')
     )
   )
