@@ -19,7 +19,13 @@ async function getBuffer (source, sourceType) {
 
 class Key {
   constructor (source) {
-    this._source = source
+    if (source instanceof Key) {
+      this._source = source._source
+      this._key = source._key
+      this._saltLength = source._saltLength
+    } else {
+      this._source = source
+    }
   }
 
   async _getKey () {
@@ -43,20 +49,23 @@ class Key {
   }
 
   async salt (source = crypto.randomBytes(64)) {
-    const saltLength = await this._computeSaltLength()
-    this._salt = await getBuffer(source, 'salt')
-    if (this._salt.length < saltLength) {
-      throw new Error(`Salt too small (expected length is ${saltLength} bytes)`)
+    const expectedSaltLength = await this._computeSaltLength()
+    const saltedKey = new Key(this)
+    saltedKey._salt = await getBuffer(source, 'salt')
+    const saltLength = saltedKey._salt.length
+    if (saltLength < expectedSaltLength) {
+      throw new Error(`Salt too small (expected length is ${expectedSaltLength} bytes)`)
     }
-    if (this._salt.length > saltLength) {
-      this._salt = this._salt.slice(0, saltLength)
+    if (saltLength > expectedSaltLength) {
+      saltedKey._salt = saltedKey._salt.slice(0, expectedSaltLength)
     }
     const hash = crypto.createHash('sha512')
-    hash.update(this._key)
-    hash.update(this._salt)
-    this._hash = hash.digest()
-    this._saltedKeyLength = this._key.length + saltLength
-    this._initialOffset = this._salt.readUInt32BE(saltLength - 4)
+    hash.update(saltedKey._key)
+    hash.update(saltedKey._salt)
+    saltedKey._hash = hash.digest()
+    saltedKey._saltedKeyLength = saltedKey._key.length + expectedSaltLength
+    saltedKey._initialOffset = saltedKey._salt.readUInt32BE(expectedSaltLength - 4)
+    return saltedKey
   }
 
   mask (offset) {
