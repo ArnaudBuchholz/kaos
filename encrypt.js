@@ -1,35 +1,17 @@
 'use strict'
 
-const CryptoStream = require('./CryptoStream')
-const createKey = require('./createKey')
-const toBuffer = require('./toBuffer')
+const KaosTransform = require('./Transform')
 
-async function encrypt (key, buffer, salt) {
-  return toBuffer(await encrypt.createStream(key, salt), buffer)
-}
-
-class EncryptionStream extends CryptoStream {
-  _write (chunk, encoding, onwrite) {
+class KaosEncrypt extends KaosTransform {
+  async _transform (chunk, encoding, callback) {
+    if (!this._key._salt) {
+      this._key = await this._key.salt()
+      this._offset = this._key._initialOffset
+      this.push(this._key._salt)
+    }
     this._mask(chunk)
-    this._readIfPending()
-    onwrite()
-  }
-
-  end () {
-    this._flush()
-    return super.end.apply(this, arguments)
-  }
-
-  constructor (key) {
-    super()
-    this._key = key
-    this._chunks.push(key.salt.subarray(0, key.offset))
-    this._offset = key.salt.readUInt32BE(key.offset - 4)
+    callback()
   }
 }
 
-encrypt.createStream = async function (key, salt) {
-  return new EncryptionStream(await createKey(key, salt))
-}
-
-module.exports = encrypt
+module.exports = key => new KaosEncrypt(key)
