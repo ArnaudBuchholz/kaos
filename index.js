@@ -34,6 +34,7 @@ if (require.main === module) {
   }
 } else {
   module.exports = {
+    key: require('./key'),
     encrypt,
     decrypt
   }
