@@ -20,9 +20,9 @@ async function getBuffer (source, sourceType) {
 class Key {
   constructor (source) {
     if (source instanceof Key) {
-      this._source = source._source
-      this._key = source._key
-      this._saltLength = source._saltLength
+      Object.keys(source).forEach(property => {
+        this[property] = source[property]
+      })
     } else {
       this._source = source
     }
