@@ -11,52 +11,92 @@ const WritableBuffer = require('../WritableBuffer')
 const similarity = require('../similarity')
 
 describe('encrypt', () => {
-  const secretKey = key('my secret key')
-  let message
-  let encrypted
+  const literalKey = 'my secret key'
+  const unsaltedKey = key(literalKey)
+  const message = Buffer.from('Hello World !', 'utf8')
+  let saltedKey
   let saltLength
+  let encrypted
+  let encryptedWithoutSalt
 
   before(async () => {
-    message = Buffer.from('Hello World !', 'utf8')
-    await secretKey.salt()
+    saltedKey = await unsaltedKey.salt()
     const writable = new WritableBuffer()
+    const transform = encrypt(saltedKey)
     await pipeline(
       new ReadableBuffer(message),
-      encrypt(secretKey),
+      transform,
       writable
     )
     encrypted = writable.buffer
-    saltLength = secretKey._saltLength
+    saltLength = saltedKey._saltLength
+    assert.ok(saltLength > 0)
+    assert.strictEqual(transform._nbCallsToMask, 1)
   })
 
   it('encrypts the message', async () => {
-    const encryptedWithoutSalt = encrypted.slice(saltLength)
+    encryptedWithoutSalt = encrypted.slice(saltLength)
     assert.strictEqual(message.length, encryptedWithoutSalt.length)
     similarity(message, encryptedWithoutSalt, 0)
   })
 
-/*
-  it('supports streaming', async () => {
-    const stream = await encrypt.createStream(secretKey)
-    const promise = toBuffer(stream).then(streamed => {
-      assert.strictEqual(encrypted.length, streamed.length)
-      similarity(encrypted, streamed, 100)
+  const versions = {
+    literal: literalKey,
+    unsalted: unsaltedKey
+  }
+  Object.keys(versions).forEach(label => {
+    const keyVersion = versions[label]
+    it(`supports ${label} key`, async () => {
+      const writable = new WritableBuffer()
+      await pipeline(
+        new ReadableBuffer(message),
+        encrypt(keyVersion),
+        writable
+      )
+      const result = writable.buffer
+      const resultWithoutSalt = result.slice(saltLength)
+      assert.strictEqual(message.length, resultWithoutSalt.length)
+      similarity(message, resultWithoutSalt, 0)
+      similarity(encryptedWithoutSalt, resultWithoutSalt, 50)
     })
-    let index = 0
-    function next () {
-      if (index < message.length) {
-        stream.write(Buffer.alloc(1, message[index]), next)
-        ++index
-      } else {
-        stream.end()
-      }
+  })
+
+  it('generates consistent result when reusing the salted key', async () => {
+    const writable = new WritableBuffer()
+    await pipeline(
+      new ReadableBuffer(message),
+      encrypt(saltedKey),
+      writable
+    )
+    const result = writable.buffer
+    const resultWithoutSalt = result.slice(saltLength)
+    assert.strictEqual(message.length, resultWithoutSalt.length)
+    similarity(message, resultWithoutSalt, 0)
+    assert.strictEqual(similarity(encryptedWithoutSalt, resultWithoutSalt).percent, 100)
+  })
+
+  it('supports streaming (each byte individually)', async () => {
+    const buffers = []
+    for (let offset = 0; offset < message.length; ++offset) {
+      buffers.push(message.slice(offset, offset + 1))
     }
-    next()
-    return promise
+    const writable = new WritableBuffer()
+    const transform = encrypt(saltedKey)
+    await pipeline(
+      new ReadableBuffer(buffers),
+      transform,
+      writable
+    )
+    assert.strictEqual(transform._nbCallsToMask, message.length)
+    const result = writable.buffer
+    const resultWithoutSalt = result.slice(saltLength)
+    assert.strictEqual(message.length, resultWithoutSalt.length)
+    similarity(message, resultWithoutSalt, 0)
+    assert.strictEqual(similarity(encryptedWithoutSalt, resultWithoutSalt).percent, 100)
   })
 
   describe('performance', function () {
-    this.timeout(10000)
+    this.timeout(0)
     let bigMessage
 
     before(async () => {
@@ -68,16 +108,23 @@ describe('encrypt', () => {
     it(`is performant (loops=${loops})`, async () => {
       let cumulated = 0
       for (var count = 0; count < 10; ++count) {
+        const writable = new WritableBuffer()
         const start = process.hrtime()
-        const encrypted = await encrypt(secretKey, bigMessage)
+        await pipeline(
+          new ReadableBuffer(bigMessage),
+          encrypt(saltedKey),
+          writable
+        )
         const duration = process.hrtime(start)
         cumulated += duration[1] / 1000000
-        similarity(bigMessage, encrypted.slice(offset), 0)
+        const result = writable.buffer
+        const resultWithoutSalt = result.slice(saltLength)
+        assert.strictEqual(bigMessage.length, resultWithoutSalt.length)
+        similarity(bigMessage, resultWithoutSalt, 0)
       }
       const ms = cumulated / loops
       const speed = Math.floor(bigMessage.length / (1024 * ms))
       console.info('        Execution time %dms, speed %d Kb/ms', Math.floor(ms), speed)
     })
   })
-*/
 })
