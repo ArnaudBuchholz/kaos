@@ -9,7 +9,6 @@ const similarity = require('../similarity')
 
 const mySecretKey = 'My secret key'
 const hashSimilarityThreshold = 30 // Similarity between hashes
-const blocksSimilarityThreshold = 30 // Similarity between consecutive mask blocks
 
 describe('key', () => {
   describe('definition', () => {
@@ -47,38 +46,6 @@ describe('key', () => {
       const saltedKey1 = await myKey.salt(salt)
       const saltedKey2 = await myKey.salt(salt)
       assert.strictEqual(similarity(saltedKey1._hash, saltedKey2._hash).percent, 100)
-    })
-  })
-
-  describe('mask', () => {
-    it(`makes sure consecutive blocks of 64 bytes do not repeat themselves (< ${blocksSimilarityThreshold}%)`, async function () {
-      this.timeout(5000)
-      const length = 64 * 63
-      for (let size = 1; size <= 128; ++size) {
-        const myKey = key(crypto.randomBytes(size))
-        const saltedKey = await myKey.salt()
-        assert.notStrictEqual(saltedKey._saltedKeyLength % 64, 0)
-        assert.strictEqual(saltedKey._saltedKeyLength % 2, 1)
-        assert.ok(saltedKey._saltLength >= 32)
-        assert.ok(saltedKey._saltLength <= 64)
-        const buffer = Buffer.allocUnsafe(length)
-        for (let index = 0; index < length; ++index) {
-          const mask = saltedKey.mask(index)
-          assert.ok(!!mask)
-          buffer[index] = saltedKey.mask(index)
-        }
-        for (let index = 0; index < 62; ++index) {
-          let offset = index * 64
-          const block = buffer.slice(offset, offset + 64)
-          assert.strictEqual(block.length, 64)
-          while (offset < length - 64) {
-            offset += 64
-            const next = buffer.slice(offset, offset + 64)
-            assert.strictEqual(next.length, 64)
-            similarity(block, next, blocksSimilarityThreshold)
-          }
-        }
-      }
     })
   })
 })
