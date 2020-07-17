@@ -67,20 +67,6 @@ class Key {
     saltedKey._initialOffset = saltedKey._salt.readUInt32BE(expectedSaltLength - 4)
     return saltedKey
   }
-
-  mask (offset) {
-    const shiftedOffset = this._initialOffset + offset
-    const keyOffset = shiftedOffset % this._saltedKeyLength
-    const keyLength = this._key.length
-    let keyByte
-    if (keyOffset < keyLength) {
-      keyByte = this._key[keyOffset]
-    } else {
-      keyByte = this._salt[keyOffset - keyLength]
-    }
-    const hashByte = this._hash[shiftedOffset % this._hash.length]
-    return keyByte ^ hashByte || keyByte | hashByte || keyByte || hashByte || 85
-  }
 }
 
 module.exports = source => new Key(source)
