@@ -22,16 +22,15 @@ describe('encrypt', () => {
   before(async () => {
     saltedKey = await unsaltedKey.salt()
     const writable = new WritableBuffer()
-    const transform = encrypt(saltedKey)
     await pipeline(
       new ReadableBuffer(message),
-      transform,
+      encrypt(saltedKey),
       writable
     )
     encrypted = writable.buffer
     saltLength = saltedKey._saltLength
     assert.ok(saltLength > 0)
-    assert.strictEqual(transform._nbCallsToMask, 1)
+    assert.strictEqual(writable.writeCount, 2 /* salt + encrypted */)
   })
 
   it('encrypts the message', async () => {
@@ -81,13 +80,12 @@ describe('encrypt', () => {
       buffers.push(message.slice(offset, offset + 1))
     }
     const writable = new WritableBuffer()
-    const transform = encrypt(saltedKey)
     await pipeline(
       new ReadableBuffer(buffers),
-      transform,
+      encrypt(saltedKey),
       writable
     )
-    assert.strictEqual(transform._nbCallsToMask, message.length)
+    assert.strictEqual(writable.writeCount, 1 /* salt */ + message.length)
     const result = writable.buffer
     const resultWithoutSalt = result.slice(saltLength)
     assert.strictEqual(message.length, resultWithoutSalt.length)
