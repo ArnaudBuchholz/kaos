@@ -1,29 +1,50 @@
 'use strict'
 
 const assert = require('assert')
+const stream = require('stream')
+const { promisify } = require('util')
+const pipeline = promisify(stream.pipeline)
+const key = require('../../key')
 const encrypt = require('../../encrypt')
 const decrypt = require('../../decrypt')
-const toBuffer = require('../../toBuffer')
+const ReadableBuffer = require('../ReadableBuffer')
+const WritableBuffer = require('../WritableBuffer')
 const similarity = require('../similarity')
 
-const secretKey = 'my secret key'
-const messageToEncrypt = 'Hello World !'
-
 describe('decrypt', () => {
-  let message
+  const literalKey = 'my secret key'
+  const unsaltedKey = key(literalKey)
+  const message = Buffer.from('Hello World !', 'utf8')
+  let saltedKey
+  let saltLength
   let encrypted
+  let encryptedWithoutSalt
 
   before(async () => {
-    message = Buffer.from(messageToEncrypt, 'utf8')
-    encrypted = await encrypt(secretKey, message)
+    saltedKey = await unsaltedKey.salt()
+    const writable = new WritableBuffer()
+    await pipeline(
+      new ReadableBuffer(message),
+      encrypt(saltedKey),
+      writable
+    )
+    encrypted = writable.buffer
+    saltLength = saltedKey._saltLength
   })
 
-  it('decrypts the message', async () => {
-    const decrypted = await decrypt(secretKey, encrypted)
+  it('decrypts the message (raw key)', async () => {
+    const writable = new WritableBuffer()
+    await pipeline(
+      new ReadableBuffer(encrypted),
+      decrypt(literalKey),
+      writable
+    )
+    const decrypted = writable.buffer
     assert.strictEqual(message.length, decrypted.length)
     assert.strictEqual(similarity(message, decrypted).percent, 100)
   })
 
+/*
   it('supports streaming', async () => {
     const stream = await decrypt.createStream(secretKey)
     const promise = toBuffer(stream).then(buffer => {
@@ -82,4 +103,5 @@ describe('decrypt', () => {
       console.info('        Execution time %dms, speed %d Kb/ms', Math.floor(ms), speed)
     })
   })
+*/
 })
