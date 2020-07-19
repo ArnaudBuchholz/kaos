@@ -34,11 +34,20 @@ describe('decrypt', () => {
 
   it('decrypts the message (raw key)', async () => {
     const writable = new WritableBuffer()
+    const transform = decrypt(literalKey)
     await pipeline(
       new ReadableBuffer(encrypted),
-      decrypt(literalKey),
+      transform,
       writable
     )
+    Object.keys(saltedKey).forEach(property => {
+      const value = saltedKey[property]
+      if (value instanceof Buffer) {
+        assert.strictEqual(transform._key[property].toString('hex'), saltedKey[property].toString('hex'), property)
+      } else {
+        assert.strictEqual(transform._key[property], saltedKey[property], property)
+      }
+    })
     const decrypted = writable.buffer
     assert.strictEqual(message.length, decrypted.length)
     assert.strictEqual(similarity(message, decrypted).percent, 100)
