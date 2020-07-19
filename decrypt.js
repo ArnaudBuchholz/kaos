@@ -21,7 +21,7 @@ class KaosDecrypt extends KaosTransform {
           this._mask(chunkTail)
         }
       }
-      callback()
+      return callback()
     }
     this._mask(chunk)
     callback()
