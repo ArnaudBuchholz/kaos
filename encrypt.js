@@ -8,7 +8,7 @@ class KaosEncrypt extends KaosTransform {
       this._key = await this._key.salt()
     }
     if (this._offset === undefined) {
-      this._offset = this._key._initialOffset
+      this._offset = 0
       this.push(this._key._salt)
     }
     this._mask(chunk)
