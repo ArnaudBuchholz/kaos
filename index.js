@@ -5,32 +5,37 @@
 const encrypt = require('./encrypt.js')
 const decrypt = require('./decrypt.js')
 
-async function pipe ({ createStream, source, target, key }) {
+async function pipe ({ transform, source, target, keyParam }) {
   const { createReadStream, createWriteStream, stat } = require('fs')
-  const statAsync = require('util').promisify(stat)
-  let resolvedKey
+  const { promisify } = require('util')
+  const stream = require('stream')
+  const pipeline = promisify(stream.pipeline)
+  const statAsync = promisify(stat)
+  let key = keyParam
   try {
-    const stats = await statAsync(key)
+    const stats = await statAsync(keyParam)
     if (stats.isFile()) {
-      resolvedKey = createReadStream(key)
+      key = createReadStream(keyParam)
     }
   } catch (e) {
-    resolvedKey = key
+    key = keyParam
   }
-  const processor = await createStream(resolvedKey)
-  createReadStream(source).pipe(processor)
-  processor.pipe(createWriteStream(target))
+  await pipeline(
+    createReadStream(source),
+    transform(key),
+    createWriteStream(target)
+  )
 }
 
 if (require.main === module) {
-  const [,, mode, source, target, key] = process.argv
+  const [,, mode, source, target, keyParam] = process.argv
   if (!'e,d,encrypt,decrypt'.includes(mode)) {
     throw new Error('Invalid mode')
   }
   if (mode.charAt(0) === 'd') {
-    pipe({ createStream: decrypt.createStream, source, target, key })
+    pipe({ transform: decrypt, source, target, keyParam })
   } else {
-    pipe({ createStream: encrypt.createStream, source, target, key })
+    pipe({ transform: encrypt, source, target, keyParam })
   }
 } else {
   module.exports = {
