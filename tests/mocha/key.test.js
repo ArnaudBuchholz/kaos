@@ -19,6 +19,15 @@ describe('key', () => {
     })
   })
 
+  describe('copy', () => {
+    it('copies an non buffered key', async () => {
+      const myKey = key('my secret key')
+      const copyOfKey = key(myKey)
+      const buffer = await copyOfKey._getKey()
+      assert.strictEqual(buffer.toString('utf8'), 'my secret key')
+    })
+  })
+
   describe('salt', () => {
     it('allocates a structure containing the key, the salt, the hash, the initial offset', async () => {
       const myKey = key(mySecretKey)
