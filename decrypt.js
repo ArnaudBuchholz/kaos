@@ -26,6 +26,11 @@ class KaosDecrypt extends KaosTransform {
     this._mask(chunk)
     callback()
   }
+
+  constructor (secretKey, options) {
+    super(secretKey, options)
+    delete this._key._salt
+  }
 }
 
 /*
