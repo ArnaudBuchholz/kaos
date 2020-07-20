@@ -33,7 +33,7 @@ describe('encrypt', () => {
     assert.strictEqual(writable.writeCount, 2 /* salt + encrypted */)
   })
 
-  it('encrypts the message', async () => {
+  it('encrypts the message (salted key)', async () => {
     encryptedWithoutSalt = encrypted.slice(saltLength)
     assert.strictEqual(message.length, encryptedWithoutSalt.length)
     similarity(message, encryptedWithoutSalt, 0)
