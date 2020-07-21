@@ -125,9 +125,9 @@ const myKey = key('my secret key')
 
 myKey.byteRange(1000, 1100)  
   .then(async range => {
-    // myKey.saltRange contains offset / end to read salt
-    const saltedKey = await myKey.salt(createReadStream('file to decrypt', myKey.saltRange)))
-    // range contains offset / end to read byte range
+    // myKey.saltRange contains start / end to read salt (inclusive)
+    const saltedKey = await myKey.salt(createReadStream('file to decrypt', await myKey.saltRange())))
+    // range contains start / end to read byte range (inclusive)
     return pipeline(
       createReadStream('file to decrypt', range),
       decrypt(saltedKey, range),
