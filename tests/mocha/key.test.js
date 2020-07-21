@@ -57,4 +57,20 @@ describe('key', () => {
       assert.strictEqual(similarity(saltedKey1._hash, saltedKey2._hash).percent, 100)
     })
   })
+
+  describe('ranges', () => {
+    it('provides salt range', async () => {
+      const myKey = key('my secret key')
+      const range = await myKey.saltRange()
+      assert.strictEqual(range.start, 0)
+      assert.strictEqual(range.end, 49)
+    })
+
+    it('provides byte range', async () => {
+      const myKey = key('my secret key')
+      const range = await myKey.byteRange(100, 150)
+      assert.strictEqual(range.start, 150)
+      assert.strictEqual(range.end, 200)
+    })
+  })
 })
