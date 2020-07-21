@@ -67,6 +67,21 @@ class Key {
     saltedKey._initialOffset = saltedKey._salt.readUInt32BE(expectedSaltLength - 4)
     return saltedKey
   }
+
+  async saltRange () {
+    return {
+      start: 0,
+      end: await this._computeSaltLength() - 1
+    }
+  }
+
+  async byteRange (start, end) {
+    const saltLength = await this._computeSaltLength()
+    return {
+      start: saltLength + start,
+      end: saltLength + end
+    }
+  }
 }
 
 module.exports = source => new Key(source)
