@@ -58,14 +58,17 @@ describe('decrypt', () => {
   Object.keys(versions).forEach(label => {
     it(`supports ${label} key`, async () => {
       let keyVersion
+      let buffer
       if (label === 'salted') {
         keyVersion = saltedKey
+        buffer = encrypted.slice(await saltedKey._computeSaltLength())
       } else {
         keyVersion = versions[label]
+        buffer = encrypted
       }
       const writable = new WritableBuffer()
       await pipeline(
-        new ReadableBuffer(encrypted),
+        new ReadableBuffer(buffer),
         decrypt(keyVersion),
         writable
       )
@@ -93,21 +96,22 @@ describe('decrypt', () => {
     assert.strictEqual(similarity(message, result).percent, 100)
   })
 
-  /*
   it('supports partial streaming', async () => {
-    const info = await decrypt.getPartialStreamInfo(secretKey, 6, 11)
-    assert.strictEqual(messageToEncrypt.substring(6, 11), 'World')
-    const salt = encrypted.slice(0, info.offset)
-    const stream = await decrypt.createPartialStream(info, salt)
-    const promise = toBuffer(stream).then(buffer => {
-      const decryptedMessage = buffer.toString('utf8')
-      assert.strictEqual(decryptedMessage, 'World')
-    })
-    stream.write(encrypted.slice(info.from, info.to), () => stream.end())
-    return promise
+    assert.strictEqual('Hello World !'.substring(6, 11), 'World')
+    const range = await saltedKey.byteRange(6, 11)
+    const buffer = encrypted.slice(range.start, range.end + 1)
+    const writable = new WritableBuffer()
+    await pipeline(
+      new ReadableBuffer(buffer),
+      decrypt(saltedKey, range),
+      writable
+    )
+    assert.strictEqual(writable.writeCount, 1)
+    const decryptedMessage = writable.buffer.toString('utf8')
+    assert.strictEqual(decryptedMessage, 'World')
   })
-*/
 
+/*
   describe('performance', function () {
     this.timeout(0)
     let bigMessage
@@ -147,4 +151,5 @@ describe('decrypt', () => {
       console.info('        Execution time %dms, speed %d Kb/ms', Math.floor(ms), speed)
     })
   })
+*/
 })
