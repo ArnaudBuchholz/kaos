@@ -4,12 +4,12 @@ const KaosTransform = require('./Transform')
 
 class KaosDecrypt extends KaosTransform {
   async _transform (chunk, encoding, callback) {
-    if (!this._salt) {
-      this._saltLength = await this._key._computeSaltLength()
-      this._salt = Buffer.allocUnsafe(this._saltLength)
-      this._saltOffset = 0
-    }
     if (!this._key._salt) {
+      if (!this._salt) {
+        this._saltLength = await this._key._computeSaltLength()
+        this._salt = Buffer.allocUnsafe(this._saltLength)
+        this._saltOffset = 0
+      }
       const lengthForSalt = Math.min(this._saltLength - this._saltOffset, chunk.length)
       chunk.copy(this._salt, this._saltOffset, 0, lengthForSalt)
       this._saltOffset += lengthForSalt
@@ -26,9 +26,13 @@ class KaosDecrypt extends KaosTransform {
     callback()
   }
 
-  constructor (secretKey, range = { start: 0 }, options) {
-    super(secretKey, options)
-    this._offset = range.start
+  constructor (secretKey, range) {
+    super(secretKey)
+    if (range) {
+      this._offset = range.start - range._saltLength
+    } else {
+      this._offset = 0
+    }
   }
 }
 
