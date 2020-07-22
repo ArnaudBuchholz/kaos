@@ -122,7 +122,7 @@ describe('encrypt', () => {
       }
       const ms = cumulated / loops
       const speed = Math.floor(bigMessage.length / (1024 * ms))
-      console.info('        Execution time %dms, speed %d Kb/ms', Math.floor(ms), speed)
+      console.log(`        Execution time ${Math.floor(ms)}ms, speed ${speed} Kb/ms`)
     })
   })
 })
