@@ -37,8 +37,8 @@ module.exports = class KaosTransform extends Transform {
     this.push(buffer)
   }
 
-  constructor (secretKey, options) {
-    super(options)
+  constructor (secretKey) {
+    super()
     this._key = key(secretKey)
   }
 }
