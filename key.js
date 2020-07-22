@@ -76,10 +76,11 @@ class Key {
   }
 
   async byteRange (start, end) {
-    const saltLength = await this._computeSaltLength()
+    const _saltLength = await this._computeSaltLength()
     return {
-      start: saltLength + start,
-      end: saltLength + end
+      start: _saltLength + start,
+      end: _saltLength + end,
+      _saltLength
     }
   }
 }
