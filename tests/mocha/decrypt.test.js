@@ -98,7 +98,7 @@ describe('decrypt', () => {
 
   it('supports partial streaming', async () => {
     assert.strictEqual('Hello World !'.substring(6, 11), 'World')
-    const range = await saltedKey.byteRange(6, 11)
+    const range = await saltedKey.byteRange(6, 10)
     const buffer = encrypted.slice(range.start, range.end + 1)
     const writable = new WritableBuffer()
     await pipeline(
@@ -111,8 +111,7 @@ describe('decrypt', () => {
     assert.strictEqual(decryptedMessage, 'World')
   })
 
-/*
-  describe('performance', function () {
+  describe('performance & safety', function () {
     this.timeout(0)
     let bigMessage
     let bigEncrypted
@@ -148,8 +147,30 @@ describe('decrypt', () => {
       }
       const ms = cumulated / loops
       const speed = Math.floor(bigMessage.length / (1024 * ms))
-      console.info('        Execution time %dms, speed %d Kb/ms', Math.floor(ms), speed)
+      console.log(`        Execution time ${Math.floor(ms)}ms, speed ${speed} Kb/ms`)
+    })
+
+    it('is safe (one byte variation, threshold is 20%)', async () => {
+      let min = 100
+      let max = 0
+      for (var byte = 0; byte < 256; ++byte) {
+        if (String.fromCharCode(byte) === literalKey[0]) {
+          continue
+        }
+        const alteredLiteralKey = String.fromCharCode(byte) + literalKey.substring(1)
+        const writable = new WritableBuffer()
+        await pipeline(
+          new ReadableBuffer(bigEncrypted),
+          decrypt(alteredLiteralKey),
+          writable
+        )
+        const result = writable.buffer
+        const percent = similarity(bigMessage, result).percent
+        assert.ok(percent < 20)
+        min = Math.min(min, percent)
+        max = Math.max(max, percent)
+      }
+      console.log(`        Min: ${min}%, Max: ${max}%`)
     })
   })
-*/
 })
