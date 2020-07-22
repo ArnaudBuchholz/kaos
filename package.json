@@ -30,6 +30,7 @@
     "standard": "^14.3.4"
   },
   "mocha": {
+    "diff": false,
     "spec": [
       "tests/mocha/*.test.js"
     ]
