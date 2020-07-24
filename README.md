@@ -70,7 +70,7 @@ myKey.salt()
   .catch(() => console.log('Encryption failed.'))
 ```
 
-### `Stream.Transform decrypt (key, range)`
+### `Stream.Transform decrypt (key, range = undefined)`
 
 The `decrypt` API accepts two parameters and returns a [Stream.Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) instance.
 
