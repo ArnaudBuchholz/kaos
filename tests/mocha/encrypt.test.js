@@ -93,6 +93,23 @@ describe('encrypt', () => {
     assert.strictEqual(similarity(encryptedWithoutSalt, resultWithoutSalt).percent, 100)
   })
 
+  it('supports partial streaming', async () => {
+    const part1 = new WritableBuffer()
+    await pipeline(
+      new ReadableBuffer(Buffer.from('Hello', 'utf8')),
+      encrypt(saltedKey),
+      part1
+    )
+    const part2 = new WritableBuffer()
+    await pipeline(
+      new ReadableBuffer(Buffer.from(' World !', 'utf8')),
+      encrypt(saltedKey, 5),
+      part2
+    )
+    const result = Buffer.concat([part1.buffer, part2.buffer])
+    assert.strictEqual(similarity(encrypted, result).percent, 100)
+  })
+
   describe('performance', function () {
     this.timeout(0)
     let bigMessage
