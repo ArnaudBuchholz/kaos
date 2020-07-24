@@ -14,6 +14,11 @@ class KaosEncrypt extends KaosTransform {
     this._mask(chunk)
     callback()
   }
+
+  constructor (secretKey, offset) {
+    super(secretKey)
+    this._offset = offset
+  }
 }
 
-module.exports = key => new KaosEncrypt(key)
+module.exports = (key, offset) => new KaosEncrypt(key, offset)
