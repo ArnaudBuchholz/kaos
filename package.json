@@ -1,8 +1,11 @@
 {
-  "name": "kaos",
+  "name": "@abz/kaos",
   "version": "1.0.0",
   "description": "A simple stream encrypter",
   "main": "index.js",
+  "files": [
+    "*.js"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "standard --fix",
