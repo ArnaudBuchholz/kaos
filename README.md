@@ -29,7 +29,7 @@ The second parameter must be used **only** when the encryption is done by **chun
 const { promisify } = require('util')
 const pipeline = promisify(require('stream').pipeline)
 const { createReadStream, createWriteStream } = require('fs')
-const { encrypt } = require('kaos')
+const { encrypt } = require('@abz/kaos')
 
 pipeline(
   createReadStream('file to encrypt'),
@@ -50,7 +50,7 @@ If the data to encrypt is **available by chunks** *(for instance : uploaded by p
 const { promisify } = require('util')
 const pipeline = promisify(require('stream').pipeline)
 const { createReadStream, createWriteStream } = require('fs')
-const { key, encrypt } = require('kaos')
+const { key, encrypt } = require('@abz/kaos')
 
 const myKey = key('my secret key')
 
@@ -86,7 +86,7 @@ The second parameter must be used only when the decryption is done by chunks *(s
 const { promisify } = require('util')
 const pipeline = promisify(require('stream').pipeline)
 const { createReadStream, createWriteStream } = require('fs')
-const { decrypt } = require('kaos')
+const { decrypt } = require('@abz/kaos')
 
 pipeline(
   createReadStream('file to decrypt'),
@@ -109,7 +109,7 @@ The first step consists in reading the **key salt**. Once salted, the key can be
 const { promisify } = require('util')
 const pipeline = promisify(require('stream').pipeline)
 const { createReadStream, createWriteStream } = require('fs')
-const { key, decrypt } = require('kaos')
+const { key, decrypt } = require('@abz/kaos')
 
 const myKey = key('my secret key')
 
