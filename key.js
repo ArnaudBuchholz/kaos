@@ -37,13 +37,7 @@ class Key {
 
   async _computeSaltLength () {
     if (!this._saltLength) {
-      // hash is 64 bytes long, pad content to minimize the repetition
-      const lengthMod64 = (await this._getKey()).length % 64
-      if (lengthMod64 < 32) {
-        this._saltLength = 63 - lengthMod64 /* 63, 62, ..., 32 */
-      } else {
-        this._saltLength = 1 + lengthMod64 /* 33, 34, ..., 63 */
-      }
+      this._saltLength = key.saltLength((await this._getKey()).length)
     }
     return this._saltLength
   }
@@ -85,4 +79,14 @@ class Key {
   }
 }
 
-module.exports = source => new Key(source)
+const key = source => new Key(source)
+
+key.saltLength = keyLength => {
+  const min = 63 - keyLength % 64
+  if (min < 32) {
+    return min + 64
+  }
+  return min
+}
+
+module.exports = key
