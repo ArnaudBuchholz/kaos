@@ -29,6 +29,14 @@ describe('key', () => {
   })
 
   describe('salt', () => {
+    it('ensures the salted key has a specific length', () => {
+      for (let keyLength = 1; keyLength < 256; ++keyLength) {
+        const saltLength = key.saltLength(keyLength)
+        assert.ok(saltLength > 32)
+        assert.strictEqual((keyLength + saltLength) % 64, 63)
+      }
+    })
+
     it('allocates a structure containing the key, the salt, the hash, the initial offset', async () => {
       const myKey = key(mySecretKey)
       const saltedKey = await myKey.salt()
