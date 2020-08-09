@@ -7,6 +7,15 @@ Kaos is a simple but efficient *(and hopefully hard to break)* data encrypter.
 * It enables encryption / decryption by **chunks**
 * Two consecutive encryptions with the **same unsalted key** generates **different outputs**
 
+## Important notes
+
+* The package is **not** backward compatible : files encrypted with one version must be decrypted with the **exact same** version
+* Specify the version during the **installation**, for instance : `npm install kaos@1.0.0`
+* When installed globally, it provides a command line :
+  * `kaos encrypt <path of file to encrypt> <path of encrypted file> <key>`
+  * `kaos decrypt <path of the encrypted file> <path of decrypted file> <key>`
+  * The key can be either a **string** or the **path** to an existing file
+
 ## API
 
 ### `Stream.Transform encrypt (key, offset = undefined)`
