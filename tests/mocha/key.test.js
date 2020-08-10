@@ -32,7 +32,7 @@ describe('key', () => {
     it('ensures the salted key has a specific length', () => {
       for (let keyLength = 1; keyLength < 256; ++keyLength) {
         const saltLength = key.saltLength(keyLength)
-        assert.ok(saltLength > 32)
+        assert.ok(saltLength >= 32)
         assert.strictEqual((keyLength + saltLength) % 64, 63)
       }
     })
