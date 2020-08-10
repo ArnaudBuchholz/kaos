@@ -16,10 +16,9 @@ describe('Transform', () => {
       for (let size = 1; size <= 128; ++size) {
         const myKey = key(crypto.randomBytes(size))
         const saltedKey = await myKey.salt()
-        assert.notStrictEqual(saltedKey._saltedKeyLength % 64, 0)
-        assert.strictEqual(saltedKey._saltedKeyLength % 2, 1)
+        assert.strictEqual(saltedKey._saltedKeyLength % 64, 63)
         assert.ok(saltedKey._saltLength >= 32)
-        assert.ok(saltedKey._saltLength <= 64)
+        assert.ok(saltedKey._saltLength <= key.MAX_SALT_LENGTH)
         const message = Buffer.alloc(length, 0)
         const transform = new KaosTransform(saltedKey)
         transform._offset = 0
