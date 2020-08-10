@@ -42,7 +42,7 @@ class Key {
     return this._saltLength
   }
 
-  async salt (source = crypto.randomBytes(64)) {
+  async salt (source = crypto.randomBytes(key.MAX_SALT_LENGTH)) {
     const expectedSaltLength = await this._computeSaltLength()
     const saltedKey = new Key(this)
     saltedKey._salt = await getBuffer(source, 'salt')
@@ -88,5 +88,7 @@ key.saltLength = keyLength => {
   }
   return min
 }
+
+key.MAX_SALT_LENGTH = 95
 
 module.exports = key
