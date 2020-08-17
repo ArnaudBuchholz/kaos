@@ -73,7 +73,7 @@ myKey.salt()
   .then(() => pipeline(
     createReadStream('file to encrypt', { start: 51 }),
     encrypt(mySaltedKey, 51), // Start offset of this chunk
-    createWriteStream('encrypted file', { flags: 'r+', start: 51 })
+    createWriteStream('encrypted file', { flags: 'a' })
   ))
   .then(() => console.log('Encryption succeeded.'))
   .catch(() => console.log('Encryption failed.'))
