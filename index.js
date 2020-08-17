@@ -28,15 +28,29 @@ async function pipe ({ transform, source, target, keyParam }) {
 }
 
 if (require.main === module) {
+  if (process.argv.length < 6) {
+    console.log(`kaos <mode> <source> <target> <key>
+where: <mode> = encrypt | decrypt
+       <source> = source file path (must exist)
+       <target> = target file path (will create)
+       <key> = key file path (if exists) | key string`)
+    process.exit(-1)
+  }
   const [,, mode, source, target, keyParam] = process.argv
   if (!'e,d,encrypt,decrypt'.includes(mode)) {
-    throw new Error('Invalid mode')
+    console.error('Invalid mode')
+    process.exit(-2)
   }
+  let promise
   if (mode.charAt(0) === 'd') {
-    pipe({ transform: decrypt, source, target, keyParam })
+    promise = pipe({ transform: decrypt, source, target, keyParam })
   } else {
-    pipe({ transform: encrypt, source, target, keyParam })
+    promise = pipe({ transform: encrypt, source, target, keyParam })
   }
+  promise.then(() => process.exit(0), reason => {
+    console.error(reason.toString())
+    process.exit(-3)
+  })
 } else {
   module.exports = {
     key: require('./key'),
